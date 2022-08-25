@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/PuerkitoBio/goquery"
@@ -24,10 +25,17 @@ type Selector struct {
 }
 
 type Subscription struct {
-	Id        string
-	WebsiteId string
-	Threshold string
-	Frequency string
+	Notification NotificationSettings
+	Id           string
+	WebsiteId    string
+	Threshold    string
+	Frequency    string
+}
+
+type NotificationSettings struct {
+	Type     string
+	Address  string
+	Notifier Notifier
 }
 
 type Website struct {
@@ -77,7 +85,9 @@ func (j JSONScraper) Scrape(w *Website) (Result, error) {
 	if err != nil {
 		panic(err)
 	}
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
 	res, err := client.Do(req)
 	if err != nil {
 		return Result{}, err
@@ -107,7 +117,9 @@ func (h HTMLScraper) Scrape(w *Website) (Result, error) {
 	if err != nil {
 		panic(err)
 	}
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: time.Second * 5,
+	}
 	res, err := client.Do(req)
 	if err != nil {
 		return Result{}, err
@@ -124,11 +136,34 @@ func (h HTMLScraper) Scrape(w *Website) (Result, error) {
 	return Result{Value: value, Website: w}, nil
 }
 
+type Notifier interface {
+	Write(p []byte) (n int, err error)
+}
+
+type ConsoleNotifier struct {
+	Address string
+}
+type EmailNotifier struct {
+	Address string
+}
+
+func (c ConsoleNotifier) Write(p []byte) (n int, err error) {
+	fmt.Println(string(p))
+	return len(p), nil
+}
+
+func (e EmailNotifier) Write(p []byte) (n int, err error) {
+	fmt.Println("Sending email to", e.Address)
+	fmt.Println(string(p))
+	return len(p), nil
+}
+
 func worker(jobs <-chan Job, results chan<- Result, wg *sync.WaitGroup) {
 	for j := range jobs {
 		result, err := j.Scraper.Scrape(j.Website)
 		if err != nil {
 			results <- Result{Subscription: j.Subscription, Error: err}
+			continue
 		}
 		results <- Result{Value: result.Value, Subscription: j.Subscription, Website: result.Website}
 	}
@@ -173,6 +208,14 @@ func main() {
 		wg.Add(1)
 		sub := s
 		w := websites.GetById(s.WebsiteId)
+		if sub.Notification.Type != "" {
+			switch sub.Notification.Type {
+			case "console":
+				sub.Notification.Notifier = ConsoleNotifier{}
+			case "email":
+				sub.Notification.Notifier = EmailNotifier{Address: sub.Notification.Address}
+			}
+		}
 		jobs <- Job{Website: w, Subscription: &sub, Scraper: scrapersFactory[w.ScrapingType]}
 	}
 	close(jobs)
@@ -183,13 +226,22 @@ func processResults(results <-chan Result, wg *sync.WaitGroup) {
 	for result := range results {
 		if result.Error != nil {
 			fmt.Println(result.Error)
+			wg.Done()
+			continue
+		} else if result.Website == nil {
+			wg.Done()
+			continue
 		}
-		fmt.Println(result.Website.Name, result.Value)
 		if result.Subscription.Threshold != "" {
 			if reachedThreshold, err := checkThreshold(result.Subscription.Threshold, result.Value); err != nil {
 				log.Fatal(err)
 			} else if reachedThreshold {
-				fmt.Println("Threshold reached for", result.Website.Name)
+				notifier := result.Subscription.Notification.Notifier
+				if notifier != nil {
+					fmt.Fprint(notifier, result.Website.Name, "reached the threshold. The new value is: ", result.Value, ".")
+				} else {
+					fmt.Println("Threshold reached for", result.Website.Name)
+				}
 			}
 		}
 		wg.Done()

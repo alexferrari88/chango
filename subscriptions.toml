@@ -1,8 +1,19 @@
 [[subscription]]
+id = "1"
+websiteId = "1"
+threshold = "<= 80"
+frequency = "0 */30 * ? * *"
+[subscription.notification]
+type = "email"
+address = "email@domain.com"
+
+[[subscription]]
 id = "2"
 websiteId = "2"
 threshold = "<= 80"
 frequency = "0 */30 * ? * *"
+[subscription.notification]
+type = "console"
 
 [[subscription]]
 id = "3"
@@ -15,3 +26,5 @@ id = "4"
 websiteId = "4"
 threshold = "< 200"
 frequency = "0 */30 * ? * *"
+[subscription.notification]
+type = "console"
