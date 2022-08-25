@@ -1,0 +1,17 @@
+[[subscription]]
+id = "2"
+websiteId = "2"
+threshold = "<= 80"
+frequency = "0 */30 * ? * *"
+
+[[subscription]]
+id = "3"
+websiteId = "3"
+threshold = "< 1.55"
+frequency = "0 */30 * ? * *"
+
+[[subscription]]
+id = "4"
+websiteId = "4"
+threshold = "< 200"
+frequency = "0 */30 * ? * *"

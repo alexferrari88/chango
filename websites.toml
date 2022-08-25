@@ -1,0 +1,32 @@
+[[website]]
+id = "1"
+url = "https://www.bodyandfit.com/nl-nl/product/whey-perfection/variants.json"
+name = "Whey Perfection (Body&Fit)"
+scrapingType = "json"
+[website.selector]
+value = '#[code=="03696"].priceData.value'
+
+[[website]]
+id = "2"
+url = "https://nl.myprotein.com/10530950.price"
+name = "Impact Whey Protein (MyProtein)"
+scrapingType = "html"
+[website.selector]
+value = 'span.productPrice_priceAmount'
+
+[[website]]
+id = "3"
+url = "https://www.ah.nl/zoeken/api/products/product?webshopId=383520"
+name = "AH Amandel drink ongezoet"
+scrapingType = "json"
+[website.selector]
+value = 'card.products.0.price.now'
+
+[[website]]
+id = "4"
+url = "https://www.benq.eu/api/magento/queryProduct/BQE/nl-buy?skuids=screenbarhalo&_=1661315322172"
+name = "Benq ScreenBar Halo"
+scrapingType = "json"
+jsonKey = "response"
+[website.selector]
+value = 'data.products.items.0.price_range.minimum_price.final_price.value'
