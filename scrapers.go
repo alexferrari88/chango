@@ -1,4 +1,4 @@
-﻿package main
+﻿package chango
 
 import (
 	"fmt"
@@ -9,6 +9,42 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/tidwall/gjson"
 )
+
+type Subscription struct {
+	Notification NotificationSettings
+	Id           string
+	WebsiteId    string
+	Threshold    string
+	Frequency    string
+}
+
+type Selector struct {
+	Value     string
+	Type      string
+	Threshold string
+	Frequency string
+}
+
+type Website struct {
+	Id           string
+	Selector     Selector
+	Url          string
+	Name         string
+	ScrapingType string
+	JsonKey      string
+	RealBrowser  bool
+}
+
+type Websites []Website
+
+func (ws *Websites) GetById(id string) *Website {
+	for _, w := range *ws {
+		if w.Id == id {
+			return &w
+		}
+	}
+	return &Website{}
+}
 
 type Scraper interface {
 	Scrape(w *Website) (Result, error)
