@@ -59,10 +59,10 @@ func (ws *Websites) GetById(id string) *Website {
 	return &Website{}
 }
 
-type Job struct {
-	Website      *Website
-	Subscription *Subscription
-	Scraper      Scraper
+type job struct {
+	website      *Website
+	subscription *Subscription
+	scraper      Scraper
 }
 
 type Result struct {
@@ -158,14 +158,14 @@ func (e EmailNotifier) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func worker(jobs <-chan Job, results chan<- Result, wg *sync.WaitGroup) {
+func worker(jobs <-chan job, results chan<- Result, wg *sync.WaitGroup) {
 	for j := range jobs {
-		result, err := j.Scraper.Scrape(j.Website)
+		result, err := j.scraper.Scrape(j.website)
 		if err != nil {
-			results <- Result{Subscription: j.Subscription, Error: err}
+			results <- Result{Subscription: j.subscription, Error: err}
 			continue
 		}
-		results <- Result{Value: result.Value, Subscription: j.Subscription, Website: result.Website}
+		results <- Result{Value: result.Value, Subscription: j.subscription, Website: result.Website}
 	}
 	close(results)
 }
@@ -195,7 +195,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	jobs := make(chan Job, 100)
+	jobs := make(chan job, 100)
 	results := make(chan Result, 100)
 
 	go worker(jobs, results, &wg)
@@ -216,7 +216,7 @@ func main() {
 				sub.Notification.Notifier = EmailNotifier{Address: sub.Notification.Address}
 			}
 		}
-		jobs <- Job{Website: w, Subscription: &sub, Scraper: scrapersFactory[w.ScrapingType]}
+		jobs <- job{website: w, subscription: &sub, scraper: scrapersFactory[w.ScrapingType]}
 	}
 	close(jobs)
 	wg.Wait()
